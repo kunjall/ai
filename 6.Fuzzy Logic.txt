@@ -1,18 +1,25 @@
-def temperature_fuzzy(temperature):
-    if temperature <= 10:
-        return "very_cold"
-    elif temperature > 10 and temperature <= 20:
-        return "slightly_cold"
-    elif temperature > 20 and temperature <= 30:
-        return "no_change"
-    elif temperature > 30 and temperature <= 40:
-        return "slightly_warm"
-    else:
-        return "very_warm"
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+distance = ctrl.Antecedent(np.arange(0, 101, 1), 'distance')
+relative_speed = ctrl.Antecedent(np.arange(-10, 11, 1), 'relative_speed')
+speed = ctrl.Consequent(np.arange(0, 101, 1), 'speed')
 
-# Set temperature input value and compute fuzzy value output
-room_temperature = int(input('enter room temp: '))
-fuzzy_value = temperature_fuzzy(room_temperature)
+distance['close'] = fuzz.trimf(distance.universe, [0, 0, 50])
+distance['far'] = fuzz.trimf(distance.universe, [0, 50, 100])
 
-# Print fuzzy value output
-print(fuzzy_value)
+relative_speed['slow'] = fuzz.trimf(relative_speed.universe, [-10, -10, 0])
+relative_speed['fast'] = fuzz.trimf(relative_speed.universe, [0, 10, 10])
+
+speed['slow'] = fuzz.trimf(speed.universe, [0, 0, 50])
+speed['fast'] = fuzz.trimf(speed.universe, [0, 50, 100])
+rule1 = ctrl.Rule(distance['close'] | relative_speed['slow'], speed['slow'])
+rule2 = ctrl.Rule(distance['far'] & relative_speed['fast'], speed['fast'])
+
+speed_ctrl = ctrl.ControlSystem([rule1, rule2])
+car_speed = ctrl.ControlSystemSimulation(speed_ctrl)
+car_speed.input['distance'] = 30
+car_speed.input['relative_speed'] = -5
+
+car_speed.compute()
+car_speed.output['speed']
